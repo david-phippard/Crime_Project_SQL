@@ -69,16 +69,62 @@ RICHMOND|9073
 CREATE TABLE pd_district_pop (pd_district TEXT, pop INTEGER);
 
 INSERT INTO pd_district_pop (pd_district, pop)
-  VALUES ('southern', 75368),
-    ('northern', 75071),
-    ('central', 89486),
-    ('mission', 97043),
-    ('bayview', 84585),
-    ('ingleside', 116125),
-    ('taraval', 115179),
-    ('tenderloin', 120051),
-    ('park', 101965),
-    ('richmond', 86543);
+  VALUES ('SOUTHERN', 75368),
+    ('NORTHERN', 75071),
+    ('CENTRAL', 89486),
+    ('MISSION', 97043),
+    ('BAYVIEW', 84585),
+    ('INGLESIDE', 116125),
+    ('TARAVAL', 115179),
+    ('TENDERLOIN', 120051),
+    ('PARK', 101965),
+    ('RICHMOND', 86543);
+    
+WITH table_join AS (
+  SELECT *
+  FROM incidents i
+  LEFT JOIN pop p
+    ON i.pd_district = p.pd_district),
+aggregate_stats AS (
+  SELECT pd_district AS 'district',
+    count(*) AS 'number_incidents',
+    AVG(pop) AS 'population'
+  FROM table_join
+  WHERE strftime('%Y',datetime) = '2015'
+  GROUP BY 1)
+SELECT district,
+  1.0 * number_incidents/population
+FROM aggregate_stats
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SOUTHERN|0.398471499840781
+NORTHERN|0.267147100744628
+CENTRAL|0.207149721744183
+MISSION|0.190791710891048
+BAYVIEW|0.173458651061063
+INGLESIDE|0.115306781485468
+RICHMOND|0.10483805738188
+TARAVAL|0.103543180614522
+PARK|0.0913842985338106
+TENDERLOIN|0.0891787656912479
+
+4. Top 3 incident categories
+
+SELECT category,
+  count(*)
+FROM incidents
+WHERE strftime('%Y',datetime) = '2015'
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 3;
+
+LARCENY/THEFT|42034
+OTHER OFFENSES|20321
+NON-CRIMINAL|19127
+
+5. Top 3 incident categories, by district
+
 
 
 
