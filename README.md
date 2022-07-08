@@ -18,9 +18,8 @@ A) 2015 Crime Snapshot
 4. Top-3 incident categories
 5. Top-3 incident categories, by district
 6. Months with most/least incidents
-7. Days of the week with most/least incidents
-8. Hours of the day with most/least incidents
-9. Resolution analysis (% prosecuted, % booked or cited, % cleared, % unresolved)
+7. Hours of the day with most/least incidents
+8. Resolution analysis (% prosecuted, % booked or cited, % cleared, % unresolved)
 
 B) 2012-15 Crime trends over time
 1. Number of incidents by year
@@ -198,25 +197,125 @@ TENDERLOIN|OTHER OFFENSES|1363
 
 6. Months with most/least incidents 
 
-SELECT strftime ('%m', datetime),
-  count (*)
+WITH month_count AS (
+  SELECT strftime ('%m', datetime) AS 'month',
+    count (*) AS 'cnt'
+  FROM incidents
+  WHERE strftime ('%Y', datetime) = '2015'
+  GROUP BY 1
+  ORDER BY 2 DESC)
+SELECT month,
+  max(cnt)
+FROM month_count
+UNION
+SELECT month,
+  min(cnt)
+FROM month_count;
+
+03|13924
+12|11381
+
+7. Hours of the day with most/least incidents
+
+WITH hour_count AS (
+  SELECT strftime ('%H', datetime) AS 'hour',
+    count (*) AS 'cnt'
+  FROM incidents
+  WHERE strftime ('%Y', datetime) = '2015'
+  GROUP BY 1
+  ORDER BY 2 DESC)
+SELECT hour,
+  max(cnt)
+FROM hour_count
+UNION
+SELECT hour,
+  min(cnt)
+FROM hour_count
+ORDER BY 2 DESC;
+
+18|10521
+05|1708
+
+8. Resolution breakdown (prosecuted, booked or cited, cleared, unresolved)
+
+Take the set of resolution states. We map these as follows:
+> SELECT DISTINCT resolution FROM incidents;
+
+UNFOUNDED *--> CLEARED*
+EXCEPTIONAL CLEARANCE *--> CLEARED*
+COMPLAINANT REFUSES TO PROSECUTE *--> CLEARED*
+LOCATED *--> CLEARED*
+NOT PROSECUTED *--> CLEARED*
+ARREST, CITED *--> BOOKED OR CITED*
+ARREST, BOOKED *--> BOOKED OR CITED*
+JUVENILE BOOKED *--> BOOKED OR CITED*
+DISTRICT ATTORNEY REFUSES TO PROSECUTE *--> CLEARED*
+PSYCHOPATHIC CASE *--> BOOKED OR CITED*
+PROSECUTED BY OUTSIDE AGENCY *--> PROSECUTED*
+JUVENILE CITED *--> BOOKED OR CITED*
+JUVENILE ADMONISHED *--> BOOKED OR CITED*
+CLEARED-CONTACT JUVENILE FOR MORE INFO *--> CLEARED*
+JUVENILE DIVERTED *--> BOOKED OR CITED*
+PROSECUTED FOR LESSER OFFENSE *--> PROSECUTED*
+
+We recall the total number of incidents from A1 as 156,224;
+
+SELECT CASE 
+    WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'
+    WHEN resolution = 'EXCEPTIONAL CLEARANCE' THEN 'CLEARED' 
+    WHEN resolution = 'COMPLAINANT REFUSES TO PROSECUTE' THEN 'CLEARED'
+    WHEN resolution = 'LOCATED' THEN 'CLEARED'
+    WHEN resolution = 'NOT PROSECUTED' THEN 'CLEARED'
+    WHEN resolution = 'ARREST, CITED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'ARREST, BOOKED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'JUVENILE BOOKED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'DISTRICT ATTORNEY REFUSES TO PROSECUTE' THEN 'CLEARED'
+    WHEN resolution = 'PSYCHOPATHIC CASE' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'PROSECUTED BY OUTSIDE AGENCY' THEN 'PROSECUTED'
+    WHEN resolution = 'JUVENILE CITED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'JUVENILE ADMONISHED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'CLEARED-CONTACT JUVENILE FOR MORE INFO' THEN 'CLEARED'
+    WHEN resolution = 'JUVENILE DIVERTED' THEN 'BOOKED OR CITED'
+    WHEN resolution = 'PROSECUTED FOR LESSER OFFENSE' THEN 'PROSECUTED'
+    ELSE 'UNRESOLVED'
+    END AS 'status',
+  100.0 * COUNT(*) / 156224
 FROM incidents
-WHERE strftime ('%Y', datetime) = '2015'
+WHERE strftime('%Y',datetime) = '2015'
 GROUP BY 1
 ORDER BY 2 DESC;
 
-03|13924
-05|13711
-08|13672
-01|13594
-07|13342
-06|13287
-10|13115
-04|12950
-09|12871
-02|12320
-11|12057
-12|11381
+UNRESOLVED|70.84%
+BOOKED OR CITED|26.87%
+CLEARED|2.28&
+
+No prosecutions made in the year 2015; constrast this to the 2012 results:
+
+SELECT CASE 
+    WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'
+    ... *(as before)*
+    WHEN resolution = 'PROSECUTED FOR LESSER OFFENSE' THEN 'PROSECUTED'
+    ELSE 'UNRESOLVED'
+    END AS 'status',
+  100.0 * COUNT(*) / 156224
+FROM incidents
+WHERE strftime('%Y',datetime) = '2012'
+GROUP BY 1
+ORDER BY 2 DESC;
+
+UNRESOLVED|57.60%
+BOOKED OR CITED|28.44%
+CLEARED|3.91%
+PROSECUTED|0.22%
+
+
+
+
+    
+
+
+
+
 
   
 
