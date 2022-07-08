@@ -64,6 +64,21 @@ RICHMOND|9073
 
 3. Number of incidents per capita, by district
 
-*For this we will need to research & create a table of district populations*
+*Requires creation of a new 'district_pop' table (NB - using mock-up data)*
+
+CREATE TABLE pd_district_pop (pd_district TEXT, pop INTEGER);
+
+INSERT INTO pd_district_pop (pd_district, pop)
+  VALUES ('southern', 75368),
+    ('northern', 75071),
+    ('central', 89486),
+    ('mission', 97043),
+    ('bayview', 84585),
+    ('ingleside', 116125),
+    ('taraval', 115179),
+    ('tenderloin', 120051),
+    ('park', 101965),
+    ('richmond', 86543);
+
 
 
