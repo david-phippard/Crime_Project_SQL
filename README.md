@@ -65,9 +65,9 @@ RICHMOND|9073
 
 *Requires creation of a new 'district_pop' table (NB - using mock-up data)*
 
-CREATE TABLE pd_district_pop (pd_district TEXT, pop INTEGER);
+CREATE TABLE pop (pd_district TEXT, pop INTEGER);
 
-INSERT INTO pd_district_pop (pd_district, pop)
+INSERT INTO pop (pd_district, pop)
   VALUES ('SOUTHERN', 75368),
     ('NORTHERN', 75071),
     ('CENTRAL', 89486),
@@ -287,7 +287,7 @@ ORDER BY 2 DESC;
 
 UNRESOLVED|70.84%
 BOOKED OR CITED|26.87%
-CLEARED|2.28&
+CLEARED|2.28%
 
 No prosecutions made in the year 2015; constrast this to the 2012 results:
 
@@ -308,6 +308,109 @@ BOOKED OR CITED|28.44%
 CLEARED|3.91%
 PROSECUTED|0.22%
 
+B) 2012-15 Crime trends over time
+
+1. Number of incidents by year
+
+SELECT strftime('%Y',datetime),
+  count(*)
+FROM incidents
+GROUP BY 1;
+
+2012|140855
+2013|152806
+2014|150143
+2015|156224
+
+2. Districts with the fastest growing / fastest declining number of incidents (% change)
+
+WITH aggregate_stats AS (
+  SELECT pd_district,
+    SUM(CASE
+      WHEN strftime('%Y',datetime) = '2012' THEN 1
+      ELSE 0
+      END) AS 'incidents_2012',
+    SUM(CASE
+      WHEN strftime('%Y',datetime) = '2015' THEN 1
+      ELSE 0
+      END) AS 'incidents_2015'
+    FROM incidents
+    GROUP BY 1)
+SELECT pd_district,
+  1.0 * incidents_2015 / incidents_2012
+FROM aggregate_stats
+GROUP BY 1
+ORDER BY 2 DESC;
+
+CENTRAL|1.32095774246419
+NORTHERN|1.22728107214981
+RICHMOND|1.1772414687946
+SOUTHERN|1.15998455001931
+TARAVAL|1.13418925344746
+INGLESIDE|1.06957424714434
+PARK|1.06260691070818
+BAYVIEW|1.01151327128576
+MISSION|0.985574363888002
+TENDERLOIN|0.908057675996607
+
+3. Resolutions - clearance rate by year (defined as # cleared / # resolved)
+
+*Recall the approach taken in A8 - we take the same approach to classification*
+
+WITH aggregate_stats AS (
+  SELECT strftime('%Y',datetime) AS 'year',
+    SUM(CASE
+      WHEN resolution = 'UNFOUNDED' THEN 1
+      WHEN resolution = 'EXCEPTIONAL CLEARANCE' THEN 1 
+      WHEN resolution = 'COMPLAINANT REFUSES TO PROSECUTE' THEN 1
+      WHEN resolution = 'LOCATED' THEN 1
+      WHEN resolution = 'NOT PROSECUTED' THEN 1
+      WHEN resolution = 'DISTRICT ATTORNEY REFUSES TO PROSECUTE' THEN 1
+      WHEN resolution = 'CLEARED-CONTACT JUVENILE FOR MORE INFO' THEN 1
+      ELSE 0
+      END) AS 'cleared_count',
+    SUM(CASE
+      WHEN resolution IS NOT NULL THEN 1
+      ELSE 0
+      END) AS 'resolved_count'
+    FROM incidents
+    GROUP BY 1)
+  SELECT year,
+    1.0 * cleared_count / resolved_count
+  FROM aggregate_stats
+  GROUP BY 1
+  ORDER BY 1;
+  
+2012|0.120002358768723
+2013|0.156249499046184
+2014|0.108239095315024
+2015|0.0782251690524282
+
+4. Day of the year with most incidents, by year
+
+WITH date_count AS (
+  SELECT strftime('%d',datetime) AS 'day',
+    strftime('%m',datetime) AS 'month',
+    strftime('%Y',datetime) AS 'year',
+    count(*) AS 'cnt'
+  FROM incidents
+  GROUP BY 1, 2, 3)
+SELECT year,
+  day,
+  month,
+  max(cnt)
+FROM date_count
+GROUP BY 1;
+
+2012|01|10|547
+2013|01|01|627
+2014|11|10|521
+2015|28|06|598
+
+  
+
+
+  
 
 
 
