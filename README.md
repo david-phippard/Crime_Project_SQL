@@ -125,6 +125,99 @@ NON-CRIMINAL|19127
 
 5. Top 3 incident categories, by district
 
+WITH aggregate_stats AS (
+  SELECT pd_district,
+    category,
+    count(*) AS 'cnt'
+  FROM incidents
+  WHERE strftime('%Y',datetime) = '2015'
+  GROUP BY 1,2),
+district_category_largest1 AS (
+  SELECT pd_district,
+   category,
+    max(cnt)
+  FROM aggregate_stats
+  GROUP BY 1),
+aggregate_stats_2 AS (
+  SELECT * FROM aggregate_stats
+  EXCEPT
+  SELECT * FROM district_category_largest1),
+district_category_largest2 AS(
+  SELECT pd_district,
+   category,
+    max(cnt)
+  FROM aggregate_stats_2
+  GROUP BY 1),
+aggregate_stats_3 AS (
+  SELECT * FROM aggregate_stats_2
+  EXCEPT
+  SELECT * FROM district_category_largest2),
+district_category_largest3 AS(
+   SELECT pd_district,
+    category,
+    max(cnt)
+  FROM aggregate_stats_3
+  GROUP BY 1)
+SELECT * FROM district_category_largest1
+UNION
+SELECT * FROM district_category_largest2
+UNION 
+SELECT * FROM district_category_largest3
+ORDER BY 1, 3 DESC;
 
+BAYVIEW|OTHER OFFENSES|2659
+BAYVIEW|LARCENY/THEFT|2208
+BAYVIEW|ASSAULT|1647
+CENTRAL|LARCENY/THEFT|6912
+CENTRAL|NON-CRIMINAL|2472
+CENTRAL|OTHER OFFENSES|1666
+INGLESIDE|OTHER OFFENSES|2143
+INGLESIDE|LARCENY/THEFT|2004
+INGLESIDE|ASSAULT|1446
+MISSION|OTHER OFFENSES|2931
+MISSION|LARCENY/THEFT|2405
+MISSION|NON-CRIMINAL|2352
+NORTHERN|LARCENY/THEFT|7463
+NORTHERN|NON-CRIMINAL|2158
+NORTHERN|OTHER OFFENSES|2067
+PARK|LARCENY/THEFT|2377
+PARK|NON-CRIMINAL|1367
+PARK|OTHER OFFENSES|1132
+RICHMOND|LARCENY/THEFT|2977
+RICHMOND|NON-CRIMINAL|1349
+RICHMOND|OTHER OFFENSES|1110
+SOUTHERN|LARCENY/THEFT|10921
+SOUTHERN|NON-CRIMINAL|3518
+SOUTHERN|OTHER OFFENSES|3295
+TARAVAL|LARCENY/THEFT|2729
+TARAVAL|OTHER OFFENSES|1955
+TARAVAL|NON-CRIMINAL|1658
+TENDERLOIN|LARCENY/THEFT|2038
+TENDERLOIN|NON-CRIMINAL|1426
+TENDERLOIN|OTHER OFFENSES|1363
+
+6. Months with most/least incidents 
+
+SELECT strftime ('%m', datetime),
+  count (*)
+FROM incidents
+WHERE strftime ('%Y', datetime) = '2015'
+GROUP BY 1
+ORDER BY 2 DESC;
+
+03|13924
+05|13711
+08|13672
+01|13594
+07|13342
+06|13287
+10|13115
+04|12950
+09|12871
+02|12320
+11|12057
+12|11381
+
+  
 
 
