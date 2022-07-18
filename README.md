@@ -16,7 +16,7 @@
 | description  | PETTY THEFT OF PROPERTY  |  |
 | resolution  | EXCEPTIONAL CLEARANCE  | *```NULL``` where resolution is pending* |
 | pd_district  | CENTRAL  |  |
-| address  | 900 BLOCK OF BAY ST  | *Table also contains longitude and latitude* |
+| address  | 900 BLOCK OF BAY ST  | *Table also contains address longitude and latitude columns* |
 
 ### Index of questions posed (self-driven) 
 
