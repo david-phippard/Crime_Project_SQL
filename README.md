@@ -223,7 +223,7 @@ TENDERLOIN|NON-CRIMINAL|1426
 TENDERLOIN|OTHER OFFENSES|1363  
 
 >:arrow_forward: Across all districts, top incident category is either 'Larceny/theft' or 'Other offenses'  
-:arrow_forward: 'non-criminal' and 'assault' are the only other top-3 categories 
+:arrow_forward: 'Non-criminal' and 'Assault' are the only other top-3 categories 
 
 
 6. Months with most/least incidents 
@@ -246,6 +246,8 @@ FROM month_count;
 >03|13924  
 12|11381
 
+>:arrow_forward: Limited variation in number of incidents by month
+
 7. Hours of the day with most/least incidents
 ```sql
 WITH hour_count AS (  
@@ -266,6 +268,8 @@ ORDER BY 2 DESC;
 ```
 >18|10521  
 05|1708
+
+>:arrow_forward: 6-7pm sees the highest number of incidents (10.5k per year, or c.30/day); significantly higher than 5-6am (1.7k per year, or c.5/day)
 
 8. Resolution breakdown (prosecuted, booked or cited, cleared, unresolved)
 
@@ -327,7 +331,11 @@ ORDER BY 2 DESC;
 BOOKED OR CITED|26.87%  
 CLEARED|2.28%
 
-No prosecutions made in the year 2015; constrast this to the 2012 results:
+>:arrow_forward: Majority (71%) of 2015 cases unresolved  
+:arrow_forward: Fewer than 10% of resolved cases result in clearance  
+:arrow_forward: **No** 2015 cases have (yet?) resulted in a prosecution
+
+Constrast the 2015 results to 2012:
 ```sql
 SELECT CASE  
     WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'  
@@ -335,16 +343,22 @@ SELECT CASE
     WHEN resolution = 'PROSECUTED FOR LESSER OFFENSE' THEN 'PROSECUTED'  
     ELSE 'UNRESOLVED'  
     END AS 'status',  
-  100.0 * COUNT(*) / 156224  
+  100.0 * COUNT(*) / 140855 -- total 2012 cases (140,855) is calculated later in B1  
 FROM incidents  
 WHERE strftime('%Y',datetime) = '2012'  
 GROUP BY 1  
 ORDER BY 2 DESC;  
 ```
->UNRESOLVED|57.60%  
-BOOKED OR CITED|28.44%  
-CLEARED|3.91%  
-PROSECUTED|0.22%
+>UNRESOLVED|63.88%  
+BOOKED OR CITED|31.54%  
+CLEARED|4.33%  
+PROSECUTED|0.24%
+
+>:arrow_forward: Fewer 2012 cases are unresolved (64%, vs. 71% in 2015) - possibly due to data time lag  
+:arrow_forward: Higher clearance rate in 2012 (12%, vs. 8% in 2015)  
+:arrow_forward: Some 2012 cases resulted in prosecutions, vs. none in 2015 - but still minor (0.24% of total) 
+
+
 
 B) 2012-15 Crime trends over time
 
@@ -446,7 +460,6 @@ GROUP BY 1;
 2015|28|06|598
 
   
-
 
   
 
