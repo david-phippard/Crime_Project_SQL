@@ -302,7 +302,6 @@ We map these as follows, into either **Prosecuted**, **Booked or cited**, **Clea
 | PROSECUTED FOR LESSER OFFENSE  | Prosecuted  |
 | ```NULL```  | Unresolved  |
 
-We recall the total number of incidents from A1 as 156,224;
 ```sql
 SELECT CASE 
     WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'  
@@ -323,7 +322,7 @@ SELECT CASE
     WHEN resolution = 'PROSECUTED FOR LESSER OFFENSE' THEN 'PROSECUTED'  
     ELSE 'UNRESOLVED'  
     END AS 'status',  
-  100.0 * COUNT(*) / 156224  
+  100.0 * COUNT(*) / 156224 -- total number of 2015 cases was previously calculated as 156,224 (A1) 
 FROM incidents  
 WHERE strftime('%Y',datetime) = '2015'  
 GROUP BY 1  
