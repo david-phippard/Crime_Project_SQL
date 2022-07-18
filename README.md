@@ -5,6 +5,7 @@
 - Data taken from the following link: http://2016.padjo.org/tutorials/sqlite-data-starterpacks/#toc-sfpd-incidents-2012-through-2015
 - Queried using SQLite (Git Bash)
 - Independently developed & answered a series of questions around the data 
+- Comments on the results are highlighted with an arrow symbol (:arrow_forward:)
 
 ### Schema overview ('incidents' table) 
 
@@ -332,7 +333,7 @@ BOOKED OR CITED|26.87%
 CLEARED|2.28%
 
 >:arrow_forward: Majority (71%) of 2015 cases unresolved  
-:arrow_forward: Fewer than 10% of resolved cases result in clearance  
+:arrow_forward: Fewer than 10% of resolved cases result in clearance (>90% resulting in booking/citation)  
 :arrow_forward: **No** 2015 cases have (yet?) resulted in a prosecution
 
 Constrast the 2015 results to 2012:
@@ -374,6 +375,8 @@ GROUP BY 1;
 2014|150143  
 2015|156224
 
+>:arrow_forward: Significant jump in incident numbers between 2012-13 (+8%); overall 2012-15 CAGR of +4%
+
 2. Districts with the fastest growing / fastest declining number of incidents (% change)
 ```sql
 WITH aggregate_stats AS (  
@@ -404,6 +407,9 @@ PARK|1.06260691070818
 BAYVIEW|1.01151327128576  
 MISSION|0.985574363888002  
 TENDERLOIN|0.908057675996607  
+
+>:arrow_forward: 8 districts have seen incident numbers rise (2012-15), vs. 2 with reductions  
+:arrow_forward: Central has seen the sharpest increase in incident numbers, at +32% increase over 3 years
 
 3. Resolutions - clearance rate by year (defined as # cleared / # resolved)
 
@@ -438,7 +444,9 @@ WITH aggregate_stats AS (
 2014|0.108239095315024  
 2015|0.0782251690524282
 
-4. Day of the year with most incidents, by year
+>:arrow_forward: Significant variation in clearance rate between years (from 16% in 2013, then decreasing to 8% in 2013); general downward trend
+
+4. Day of the year with most/least incidents, by year
 ```sql
 WITH date_count AS (  
   SELECT strftime('%d',datetime) AS 'day',  
@@ -452,12 +460,28 @@ SELECT year,
   month,  
   max(cnt)  
 FROM date_count  
-GROUP BY 1;  
+GROUP BY 1
+UNION
+SELECT year,  
+  day,  
+  month,  
+  min(cnt)  
+FROM date_count  
+GROUP BY 1
+ORDER BY 1, 4 DESC;
 ```
 >2012|01|10|547  
+2012|25|12|217  
 2013|01|01|627  
+2013|25|12|152  
 2014|11|10|521  
-2015|28|06|598
+2014|25|12|257  
+2015|28|06|598  
+2015|19|12|254
+
+>:arrow_forward: Across 2012-15, worst days saw c.500-600 incidents, vs. best days with c.200  
+:arrow_forward: The day with fewest incidents tends to be Christmas Day (2012, 2013, 2014); day with most incidents varies year-on-year 
+
 
   
 
