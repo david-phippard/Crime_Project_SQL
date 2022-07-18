@@ -71,7 +71,8 @@ TENDERLOIN|10706
 PARK|9318  
 RICHMOND|9073
 
->:arrow_forward: 10 districts, with varying incident count; top 4 districts made up 56% of 2015 incidents 
+>:arrow_forward: 10 districts, with incident numbers varying from 9k (Richmond) to 30k (Southern)  
+:arrow_forward: Top 4 districts made up 56% of 2015 incidents 
 
 3. Number of incidents per capita, by district
 
