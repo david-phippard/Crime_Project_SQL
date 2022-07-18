@@ -1,17 +1,25 @@
 # Analysis of San Francisco Police Department Incident data
 *08/07/2022*
 
-### Schema overview ('incident' table) 
-- **datetime** // *e.g. 2014-05-01 00:01:00; runs from 2012-01-01 to 2015-12-31*
-- **category** // *e.g. 'Larceny/Theft', 'Fraud'*
-- **description** // *e.g. 'Petty theft of property'* 
-- **resolution** // *e.g. 'Exceptional clearance'; null where resolution pending (xx% of cases)*
-- **pd_district** // *e.g. 'Central', 'Taraval'*
-- **address** // *e.g. '900 block of Bay St' - table also contains address longitude & latitude* 
+### Methodology
+- Data taken from the following link: http://2016.padjo.org/tutorials/sqlite-data-starterpacks/#toc-sfpd-incidents-2012-through-2015
+- Queried using SQLite (Git Bash)
+- Independently developed & answered a series of questions around the data 
+
+### Schema overview ('incidents' table) 
+
+| Column | Example | Comments |
+| ------------- | ------------- | ------------- |
+| datetime  | 2014-05-01 00:01:00  | *Runs from 2012-01-01 to 2015-12-31* |
+| category  | LARCENY/THEFT  |  |
+| description  | PETTY THEFT OF PROPERTY  |  |
+| resolution  | EXCEPTIONAL CLEARANCE  | *```NULL``` where resolution is pending* |
+| pd_district  | CENTRAL  |  |
+| address  | 900 BLOCK OF BAY ST  | *Table also contains longitude and latitude* |
 
 ### Index of questions posed (self-driven) 
 
-A) 2015 Crime Snapshot
+A) **2015 Crime Snapshot**
 1. Number of incidents
 2. Number of incidents, by district
 3. Number of incidents per capita, by district
@@ -21,14 +29,11 @@ A) 2015 Crime Snapshot
 7. Hours of the day with most/least incidents
 8. Resolution analysis (% prosecuted, % booked or cited, % cleared, % unresolved)
 
-B) 2012-15 Crime trends over time
+B) **2012-15 Crime trends over time**
 1. Number of incidents by year
 2. Districts with the fastest growing / fastest declining number of incidents (% change)
 3. Resolutions - clearance rate by year (defined as # cleared / # resolved)
 4. Day of the year with most incidents, by year
-
-C) Repeat incidents
-1. *see analysis for definition*
 
 ### Solutions and findings
 
@@ -36,21 +41,25 @@ A) 2015 Crime Snapshot
 
 1. Number of incidents
 
+```sql
 SELECT COUNT(*)  
-  FROM incidents  
-  WHERE strftime('%Y',datetime) = '2015';
-  
-  Total: 156,224
+FROM incidents  
+WHERE strftime('%Y',datetime) = '2015';
+```  
+> 156224
 
 2. Number of incidents, by district
 
-SELECT pd_district, count(*)  
-  FROM incidents  
-  WHERE strftime('%Y',datetime) = '2015'  
-  GROUP BY 1  
-  ORDER BY 2 DESC;
+```sql
+SELECT pd_district,
+  COUNT(*)  
+FROM incidents  
+WHERE strftime('%Y',datetime) = '2015'  
+GROUP BY 1  
+ORDER BY 2 DESC;
+```
     
-SOUTHERN|30032  
+>SOUTHERN|30032  
 NORTHERN|20055  
 CENTRAL|18537  
 MISSION|18515  
@@ -59,16 +68,18 @@ INGLESIDE|13390
 TARAVAL|11926  
 TENDERLOIN|10706  
 PARK|9318  
-RICHMOND|9073  
+RICHMOND|9073
+
+>:arrow_forward: 10 districts, with varying incident count; top 4 districts made up 56% of 2015 incidents 
 
 3. Number of incidents per capita, by district
 
-*Requires creation of a new 'district_pop' table (NB - using mock-up data)*
-
+```sql
+/* Creating a new population by district table ('pop') */
 CREATE TABLE pop (pd_district TEXT, pop INTEGER);
 
 INSERT INTO pop (pd_district, pop)  
-  VALUES ('SOUTHERN', 75368),  
+  VALUES ('SOUTHERN', 75368),      -- Mock-up population data; actual population by police district unavailable   
     ('NORTHERN', 75071),  
     ('CENTRAL', 89486),  
     ('MISSION', 97043),  
@@ -78,7 +89,10 @@ INSERT INTO pop (pd_district, pop)
     ('TENDERLOIN', 120051),  
     ('PARK', 101965),  
     ('RICHMOND', 86543);
-    
+```
+
+```sql
+/* Joining the new table and analysing the results */ 
 WITH table_join AS (  
   SELECT *  
   FROM incidents i  
@@ -96,8 +110,9 @@ SELECT district,
 FROM aggregate_stats  
 GROUP BY 1  
 ORDER BY 2 DESC;
+```
 
-SOUTHERN|0.398471499840781  
+>SOUTHERN|0.398471499840781  
 NORTHERN|0.267147100744628  
 CENTRAL|0.207149721744183  
 MISSION|0.190791710891048  
@@ -108,8 +123,10 @@ TARAVAL|0.103543180614522
 PARK|0.0913842985338106  
 TENDERLOIN|0.0891787656912479  
 
-4. Top 3 incident categories
+>:arrow_forward: High variation in incidents per capita between districts in 2015, ranging from 0.09 to 0.40
 
+4. Top 3 incident categories
+```sql
 SELECT category,  
   count(*)  
 FROM incidents  
@@ -117,20 +134,23 @@ WHERE strftime('%Y',datetime) = '2015'
 GROUP BY 1  
 ORDER BY 2 DESC  
 LIMIT 3;
-
-LARCENY/THEFT|42034  
+```
+>LARCENY/THEFT|42034  
 OTHER OFFENSES|20321  
 NON-CRIMINAL|19127
 
-5. Top 3 incident categories, by district
+>:arrow_forward: Larceny/theft the clear #1 incident category, but only forms c.25% of total; long tail of other categories
 
+5. Top 3 incident categories, by district
+```sql
+/* Solution below relies on multiple temporary tables & uses of UNION/EXCEPT - possible to optimise? */
 WITH aggregate_stats AS (  
   SELECT pd_district,  
     category,  
     count(*) AS 'cnt'  
   FROM incidents  
   WHERE strftime('%Y',datetime) = '2015'  
-  GROUP BY 1,2),  
+  GROUP BY 1, 2),  
 district_category_largest1 AS (  
   SELECT pd_district,  
    category,  
@@ -138,9 +158,11 @@ district_category_largest1 AS (
   FROM aggregate_stats  
   GROUP BY 1),  
 aggregate_stats_2 AS (  
-  SELECT * FROM aggregate_stats  
+  SELECT *
+  FROM aggregate_stats  
   EXCEPT  
-  SELECT * FROM district_category_largest1),  
+  SELECT *
+  FROM district_category_largest1),  
 district_category_largest2 AS(  
   SELECT pd_district,  
    category,  
@@ -148,23 +170,28 @@ district_category_largest2 AS(
   FROM aggregate_stats_2  
   GROUP BY 1),  
 aggregate_stats_3 AS (  
-  SELECT * FROM aggregate_stats_2  
+  SELECT *
+  FROM aggregate_stats_2  
   EXCEPT  
-  SELECT * FROM district_category_largest2),  
+  SELECT *
+  FROM district_category_largest2),  
 district_category_largest3 AS(  
    SELECT pd_district,  
     category,  
     max(cnt)  
   FROM aggregate_stats_3  
   GROUP BY 1)  
-SELECT * FROM district_category_largest1  
+SELECT *
+FROM district_category_largest1  
 UNION  
-SELECT * FROM district_category_largest2  
+SELECT *
+FROM district_category_largest2  
 UNION  
-SELECT * FROM district_category_largest3  
+SELECT *
+FROM district_category_largest3  
 ORDER BY 1, 3 DESC;
-
-BAYVIEW|OTHER OFFENSES|2659  
+```
+>BAYVIEW|OTHER OFFENSES|2659  
 BAYVIEW|LARCENY/THEFT|2208  
 BAYVIEW|ASSAULT|1647  
 CENTRAL|LARCENY/THEFT|6912  
@@ -195,8 +222,12 @@ TENDERLOIN|LARCENY/THEFT|2038
 TENDERLOIN|NON-CRIMINAL|1426  
 TENDERLOIN|OTHER OFFENSES|1363  
 
-6. Months with most/least incidents 
+>:arrow_forward: Across all districts, top incident category is either 'Larceny/theft' or 'Other offenses'  
+:arrow_forward: 'non-criminal' and 'assault' are the only other top-3 categories 
 
+
+6. Months with most/least incidents 
+```sql
 WITH month_count AS (  
   SELECT strftime ('%m', datetime) AS 'month',  
     count (*) AS 'cnt'  
@@ -211,12 +242,12 @@ UNION
 SELECT month,  
   min(cnt)  
 FROM month_count;  
-
-03|13924  
+```
+>03|13924  
 12|11381
 
 7. Hours of the day with most/least incidents
-
+```sql
 WITH hour_count AS (  
   SELECT strftime ('%H', datetime) AS 'hour',  
     count (*) AS 'cnt'  
@@ -232,34 +263,41 @@ SELECT hour,
   min(cnt)  
 FROM hour_count  
 ORDER BY 2 DESC;
-
-18|10521  
+```
+>18|10521  
 05|1708
 
 8. Resolution breakdown (prosecuted, booked or cited, cleared, unresolved)
 
-Take the set of resolution states. We map these as follows:  
-> SELECT DISTINCT resolution FROM incidents;
+Take the set of resolution states
+```sql
+SELECT DISTINCT resolution
+FROM incidents;
+```
 
-UNFOUNDED *--> CLEARED*  
-EXCEPTIONAL CLEARANCE *--> CLEARED*  
-COMPLAINANT REFUSES TO PROSECUTE *--> CLEARED*  
-LOCATED *--> CLEARED*  
-NOT PROSECUTED *--> CLEARED*  
-ARREST, CITED *--> BOOKED OR CITED*  
-ARREST, BOOKED *--> BOOKED OR CITED*  
-JUVENILE BOOKED *--> BOOKED OR CITED*  
-DISTRICT ATTORNEY REFUSES TO PROSECUTE *--> CLEARED*  
-PSYCHOPATHIC CASE *--> BOOKED OR CITED*  
-PROSECUTED BY OUTSIDE AGENCY *--> PROSECUTED*  
-JUVENILE CITED *--> BOOKED OR CITED*  
-JUVENILE ADMONISHED *--> BOOKED OR CITED*  
-CLEARED-CONTACT JUVENILE FOR MORE INFO *--> CLEARED*  
-JUVENILE DIVERTED *--> BOOKED OR CITED*  
-PROSECUTED FOR LESSER OFFENSE *--> PROSECUTED*  
+We map these as follows, into either **Prosecuted**, **Booked or cited**, **Cleared** or **Unresolved**
+
+| Resolution | Type |
+| ------------- | ------------- |
+| UNFOUNDED  | Cleared  |
+| EXCEPTIONAL CLEARANCE  | Cleared  |
+| LOCATED  | Cleared  |
+| NOT PROSECUTED  | Cleared  |
+| ARREST, CITED  | Booked or cited  |
+| ARREST, BOOKED  | Booked or cited  |
+| JUVENILE BOOKED  | Booked or cited  |
+| DISTRICT ATTORNEY REFUSES TO PROSECUTE  | Cleared  |
+| PSYCOPATHIC CASE  | Booked or cited  |
+| PROSECUTED BY OUTSIDE AGENCY  | Prosecuted  |
+| JUVENILE CITED  | Booked or cited  |
+| JUVENILE ADMONISHED  | Booked or cited  |
+| CLEARED-CONTACT JUVENILE FOR MORE INFO  | Cleared  |
+| JUVENILE DIVERTED  | Booked or cited  |
+| PROSECUTED FOR LESSER OFFENSE  | Prosecuted  |
+| ```NULL```  | Unresolved  |
 
 We recall the total number of incidents from A1 as 156,224;
-
+```sql
 SELECT CASE 
     WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'  
     WHEN resolution = 'EXCEPTIONAL CLEARANCE' THEN 'CLEARED'   
@@ -284,13 +322,13 @@ FROM incidents
 WHERE strftime('%Y',datetime) = '2015'  
 GROUP BY 1  
 ORDER BY 2 DESC;  
-
-UNRESOLVED|70.84%  
+```
+>UNRESOLVED|70.84%  
 BOOKED OR CITED|26.87%  
 CLEARED|2.28%
 
 No prosecutions made in the year 2015; constrast this to the 2012 results:
-
+```sql
 SELECT CASE  
     WHEN resolution = 'UNFOUNDED' THEN 'CLEARED'  
     ... *(as before)*  
@@ -302,8 +340,8 @@ FROM incidents
 WHERE strftime('%Y',datetime) = '2012'  
 GROUP BY 1  
 ORDER BY 2 DESC;  
-
-UNRESOLVED|57.60%  
+```
+>UNRESOLVED|57.60%  
 BOOKED OR CITED|28.44%  
 CLEARED|3.91%  
 PROSECUTED|0.22%
@@ -311,19 +349,19 @@ PROSECUTED|0.22%
 B) 2012-15 Crime trends over time
 
 1. Number of incidents by year
-
+```sql
 SELECT strftime('%Y',datetime),  
   count(*)  
 FROM incidents  
 GROUP BY 1;
-
-2012|140855
-2013|152806
-2014|150143
+```
+>2012|140855  
+2013|152806  
+2014|150143  
 2015|156224
 
 2. Districts with the fastest growing / fastest declining number of incidents (% change)
-
+```sql
 WITH aggregate_stats AS (  
   SELECT pd_district,  
     SUM(CASE  
@@ -341,8 +379,8 @@ SELECT pd_district,
 FROM aggregate_stats  
 GROUP BY 1  
 ORDER BY 2 DESC;
-
-CENTRAL|1.32095774246419  
+```
+>CENTRAL|1.32095774246419  
 NORTHERN|1.22728107214981  
 RICHMOND|1.1772414687946  
 SOUTHERN|1.15998455001931  
@@ -356,7 +394,7 @@ TENDERLOIN|0.908057675996607
 3. Resolutions - clearance rate by year (defined as # cleared / # resolved)
 
 *Recall the approach taken in A8 - we take the same approach to classification*
-
+```sql
 WITH aggregate_stats AS (  
   SELECT strftime('%Y',datetime) AS 'year',  
     SUM(CASE  
@@ -380,14 +418,14 @@ WITH aggregate_stats AS (
   FROM aggregate_stats  
   GROUP BY 1  
   ORDER BY 1;  
-  
-2012|0.120002358768723  
+```
+>2012|0.120002358768723  
 2013|0.156249499046184  
 2014|0.108239095315024  
 2015|0.0782251690524282
 
 4. Day of the year with most incidents, by year
-
+```sql
 WITH date_count AS (  
   SELECT strftime('%d',datetime) AS 'day',  
     strftime('%m',datetime) AS 'month',  
@@ -401,8 +439,8 @@ SELECT year,
   max(cnt)  
 FROM date_count  
 GROUP BY 1;  
-
-2012|01|10|547  
+```
+>2012|01|10|547  
 2013|01|01|627  
 2014|11|10|521  
 2015|28|06|598
